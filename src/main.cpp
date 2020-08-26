@@ -1,8 +1,6 @@
 #include <iostream>
 #include <filesystem>
-#include <string>
 #include <algorithm>
-#include <numeric>
 #include <future>
 #include <mutex>
 #include <queue>
@@ -49,30 +47,23 @@ void listFiles(const std::string path) {
 
     if(nr_of_images > 0){
         std::lock_guard<std::mutex> lk(m);
-        map.push_back({nr_of_images, path});
-        
+        map.push_back({nr_of_images, path});  
     }
-
-
 }
 
 void updater() {
-    bool first_time = true;
     while (true) {
         aom.lock();
         size_t ao_s = ao.size();
         aom.unlock();
-        if (ao_s == 0 && !first_time)
-            return;
-        
+        if (ao_s == 0) return;
+           
         for (size_t i = 0; i < ao_s; i++) {
             ao.front().wait();
             aom.lock();
             ao.pop();
             aom.unlock();
         }
-        if(ao_s != 0)
-            first_time = false;
     }
 }
 
@@ -86,11 +77,11 @@ int main(int argc, char* argv[])
         std::transform(str.begin(), str.end(), str.begin(), ::toupper);
         mask.insert(str);
     }
-    std::thread e(updater);
     
     std::string cwd = get_current_dir();
     print("WORKING at " + cwd);
     listFiles(cwd);
+    std::thread e(updater);
     e.join();
     std::cout << "DONE!\n";
     std::sort(map.begin(), map.end());
